@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星占分野系统 - 三维天球可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a2a 100%);
+            color: #e0e0ff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 70%;
+            height: 100%;
+        }
+
+        #side-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 30%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.9);
+            border-left: 1px solid rgba(100, 150, 255, 0.3);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(100, 150, 255, 0.2);
+        }
+
+        .panel-section:last-child {
+            border-bottom: none;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #8af;
+            margin-bottom: 12px;
+            text-shadow: 0 0 10px rgba(100, 150, 255, 0.5);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            background: rgba(60, 80, 140, 0.6);
+            border: 1px solid rgba(100, 150, 255, 0.4);
+            border-radius: 4px;
+            color: #c0d0ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .btn:hover {
+            background: rgba(80, 120, 200, 0.8);
+            border-color: rgba(150, 200, 255, 0.6);
+            box-shadow: 0 0 15px rgba(100, 150, 255, 0.4);
+        }
+
+        .btn.active {
+            background: rgba(100, 150, 255, 0.8);
+            border-color: #8af;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(100, 150, 255, 0.6);
+        }
+
+        #fenye-map {
+            width: 100%;
+            height: 250px;
+            background: rgba(20, 30, 60, 0.5);
+            border: 1px solid rgba(100, 150, 255, 0.3);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .event-item {
+            padding: 10px;
+            background: rgba(40, 50, 90, 0.5);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .event-item:hover {
+            background: rgba(60, 80, 140, 0.7);
+            border-color: rgba(150, 200, 255, 0.5);
+        }
+
+        .event-name {
+            font-weight: bold;
+            color: #faa;
+            margin-bottom: 4px;
+        }
+
+        .event-desc {
+            font-size: 12px;
+            color: #a0b0d0;
+        }
+
+        .star-info {
+            padding: 12px;
+            background: rgba(30, 40, 80, 0.6);
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .star-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 6px;
+        }
+
+        .star-detail {
+            font-size: 13px;
+            color: #b0c0e0;
+            line-height: 1.6;
+        }
+
+        #title {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(100, 150, 255, 0.8);
+            z-index: 10;
+        }
+
+        #subtitle {
+            position: absolute;
+            top: 60px;
+            left: 32px;
+            font-size: 14px;
+            color: #8af;
+            z-index: 10;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 35%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: #8af;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: rgba(60, 80, 140, 0.6);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, #6688cc, #88aaff);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(100, 150, 255, 0.6);
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(100, 150, 255, 0.8);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, #6688cc, #88aaff);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(100, 150, 255, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="title">星占分野系统</div>
+        <div id="subtitle">三维天球 · 二十八宿 · 十二次 · 分野映射</div>
+        
+        <div id="canvas-container">
+            <div id="loading">加载中...</div>
+        </div>
+
+        <div id="side-panel">
+            <div class="panel-section">
+                <div class="panel-title">坐标系切换</div>
+                <div class="btn-group">
+                    <button class="btn active" data-coord="equatorial">赤道坐标系</button>
+                    <button class="btn" data-coord="ecliptic">黄道坐标系</button>
+                    <button class="btn" data-coord="horizontal">地平坐标系</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">天区显示</div>
+                <div class="btn-group">
+                    <button class="btn active" data-layer="stars">二十八宿</button>
+                    <button class="btn" data-layer="twelve">十二次</button>
+                    <button class="btn" data-layer="grid">坐标网格</button>
+                    <button class="btn" data-layer="events">星占事件</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">天区分层剖切</div>
+                <div class="btn-group">
+                    <button class="btn active" data-clip="on">剖切开启</button>
+                    <button class="btn" data-clip="off">剖切关闭</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <div style="font-size: 12px; color: #8af; margin-bottom: 5px;">剖切深度</div>
+                    <input type="range" id="clip-depth" min="-100" max="100" value="0" style="width: 100%;">
+                </div>
+                <div style="margin-top: 10px;">
+                    <div style="font-size: 12px; color: #8af; margin-bottom: 5px;">剖切旋转</div>
+                    <input type="range" id="clip-rotate" min="0" max="360" value="0" style="width: 100%;">
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">分野地图</div>
+                <div id="fenye-map"></div>
+                <div id="fenye-info" class="star-info hidden">
+                    <div class="star-name" id="fenye-name"></div>
+                    <div class="star-detail" id="fenye-desc"></div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">历史星占事件</div>
+                <div id="event-list"></div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-title">星宿信息</div>
+                <div id="star-info" class="star-info">
+                    <div class="star-name">点击星宿查看详情</div>
+                    <div class="star-detail">在天球上点击任意星宿，查看对应的分野和历史记载</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="./js-bundle/starData.js"></script>
+    <script src="./js-bundle/SceneManager.js"></script>
+    <script src="./js-bundle/CoordinateSystem.js"></script>
+    <script src="./js-bundle/TwelveDivisions.js"></script>
+    <script src="./js-bundle/FenyeSystem.js"></script>
+    <script src="./js-bundle/EventMarker.js"></script>
+    <script src="./js-bundle/main.js"></script>
+</body>
+</html>
